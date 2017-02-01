@@ -1,10 +1,10 @@
+#!/usr/bin/python
+
+import sys
 from itertools import groupby
 from collections import defaultdict
 
-FILES = [
-    'D:/Code/countdown/brit-a-z.txt',
-    'D:/Code/countdown/britcaps.txt'
-]
+FILES = ['brit-a-z.txt', 'britcaps.txt']
 
 def makeCountMap(word):
     result = defaultdict(int)
@@ -12,42 +12,41 @@ def makeCountMap(word):
         result[letter] += 1
     return result
 
+WORD_MAP = dict(
+    (word, makeCountMap(word))
+    for word in (
+        line.strip().lower()
+        for fileName in FILES for line in open(fileName, 'r').xreadlines()
+    )
+    if word.isalpha()
+)
+
 def isInTarget(candidate, target):
     return all(
         target.get(letter, 0) >= count
         for letter, count in candidate.iteritems()
     )
 
-def main():
-    # Load words
-    englishWordMap = dict(
-        (word, makeCountMap(word))
-        for word in (
-            line.strip().lower()
-            for fileName in FILES for line in open(fileName, 'r').xreadlines()
-        )
-        if word.isalpha()
+def solve(target):
+    targetMap = makeCountMap(target.lower())
+    matches = sorted(
+        (word for word, wcm in WORD_MAP.iteritems() if isInTarget(wcm, targetMap)),
+        key=lambda m: len(m),
+        reverse=True
     )
+    if matches:
+        wordLen, words = next(groupby(matches, lambda word: len(word)))
+        return wordLen, list(words)
+    else:
+        return 0, []
 
+def main():
     while True:
-        target = raw_input("Enter word ('q' to quit): ").lower()
+        target = sys.stdin.readline().strip()
         if not target.isalpha():
-            print 'Invalid word. Try again...'
-            continue
-        if target == 'q':
             break
-        targetMap = makeCountMap(target.lower())
-        matches = sorted(
-            (word for word, wcm in englishWordMap.iteritems() if isInTarget(wcm, targetMap)),
-            key=lambda m: len(m),
-            reverse=True
-        )
-        if matches:
-            wordLen, words = next(groupby(matches, lambda word: len(word)))
-            print 'Best result: %s letters\n\t%s' % (wordLen, list(words))
-        else:
-            print 'No matches.'
+        wordLen, words = solve(target)
+        print('%s %s %s' % (wordLen, len(words), ' '.join(words)))
 
 if __name__ == '__main__':
     main()
-
